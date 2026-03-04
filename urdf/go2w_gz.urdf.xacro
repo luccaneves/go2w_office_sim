@@ -316,7 +316,7 @@
     </inertial>
   </link>
   <joint name="lidar_joint" type="fixed">
-    <origin xyz="0.28945 0 -0.046825" rpy="${PI} 2.8782 0" />
+    <origin xyz="0.28945 0 -0.046825" rpy="0 0 0" />
     <parent link="body" />
     <child link="lidar" />
   </joint>
@@ -329,7 +329,7 @@
       <lidar>
         <scan>
           <horizontal>
-            <samples>128</samples>
+            <samples>360</samples>
             <resolution>1</resolution>
             <min_angle>-3.14159</min_angle>
             <max_angle>3.14159</max_angle>
