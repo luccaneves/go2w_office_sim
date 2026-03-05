@@ -366,7 +366,7 @@
 
   <!-- ==================== GZ-SIM PLUGINS ==================== -->
 
-  <!-- DiffDrive: keyboard teleop via cmd_vel -->
+  <!-- DiffDrive: keyboard teleop via cmd_vel (driving only, odom from OdometryPublisher) -->
   <gazebo>
     <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
       <left_joint>FL_foot_joint</left_joint>
@@ -377,12 +377,24 @@
       <wheel_radius>0.085</wheel_radius>
       <max_linear_acceleration>1.0</max_linear_acceleration>
       <max_angular_acceleration>2.0</max_angular_acceleration>
-      <odom_publish_frequency>50</odom_publish_frequency>
+      <odom_publish_frequency>0</odom_publish_frequency>
       <topic>/cmd_vel</topic>
-      <odom_topic>/odom</odom_topic>
-      <tf_topic>/tf</tf_topic>
+      <odom_topic>/odom_unused</odom_topic>
+      <tf_topic>/tf_unused</tf_topic>
       <frame_id>odom</frame_id>
       <child_frame_id>base</child_frame_id>
+    </plugin>
+  </gazebo>
+
+  <!-- Ground-truth odometry from model pose (no wheel-slip artifacts) -->
+  <gazebo>
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>base</robot_base_frame>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>/tf</tf_topic>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <dimensions>2</dimensions>
     </plugin>
   </gazebo>
 
