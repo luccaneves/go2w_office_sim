@@ -1,11 +1,6 @@
 """
-GO2W in office world with SLAM + Nav2 + RViz.
-  - gz-sim with office.sdf
-  - GO2W robot (DiffDrive wheels, fixed legs)
-  - SLAM Toolbox (online_async)
-  - Nav2 (MPPI controller, SmacPlanner2D)
-  - RViz for visualization and 2D Nav Goal
-  - Keyboard teleop via separate terminal
+GO2W autonomous exploration:
+  Gazebo (office world) + GO2W robot + SLAM Toolbox + Nav2 + Frontier Explorer + RViz
 """
 
 import os
@@ -19,15 +14,15 @@ from launch.actions import (
     IncludeLaunchDescription,
     LogInfo,
     SetEnvironmentVariable,
+    TimerAction,
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import Command, FindExecutable, LaunchConfiguration
 
 from launch_ros.actions import Node, SetParameter
 from launch_ros.descriptions import ParameterFile
 from launch_ros.parameter_descriptions import ParameterValue
-from launch_ros.substitutions import FindPackageShare
 from nav2_common.launch import RewrittenYaml
 
 
@@ -43,8 +38,9 @@ def generate_launch_description():
     world_file = os.path.join(pkg_dir, "worlds", "office.sdf")
     nav2_params_file = os.path.join(pkg_dir, "config", "nav2_params.yaml")
     slam_params_file = os.path.join(pkg_dir, "config", "slam_params.yaml")
+    explore_params_file = os.path.join(pkg_dir, "config", "frontier_explorer_params.yaml")
     laser_filter_file = os.path.join(pkg_dir, "config", "laser_filter.yaml")
-    rviz_config_file = os.path.join(pkg_dir, "rviz", "nav2.rviz")
+    rviz_config_file = os.path.join(pkg_dir, "rviz", "explore.rviz")
 
     # Nav2 params with autostart
     configured_params = ParameterFile(
@@ -234,7 +230,21 @@ def generate_launch_description():
         ],
     )
 
-    # ===== 7. RViz =====
+    # ===== 7. Frontier Explorer (delayed 15s for Nav2 + SLAM to start) =====
+    frontier_explorer = TimerAction(
+        period=15.0,
+        actions=[
+            Node(
+                package="go2w_office_sim",
+                executable="frontier_explorer.py",
+                name="frontier_explorer",
+                output="screen",
+                parameters=[explore_params_file, {"use_sim_time": use_sim_time}],
+            ),
+        ],
+    )
+
+    # ===== 8. RViz =====
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
@@ -245,13 +255,13 @@ def generate_launch_description():
         condition=IfCondition(use_rviz),
     )
 
-    # ===== 8. Info =====
-    teleop_info = LogInfo(
+    # ===== 9. Info =====
+    info = LogInfo(
         msg="\n\n========================================\n"
-        "  GO2W Nav2 Office Simulation\n"
-        "  - Use RViz '2D Nav Goal' to send navigation goals\n"
-        "  - Or run keyboard teleop in another terminal:\n"
-        "    ros2 run teleop_twist_keyboard teleop_twist_keyboard\n"
+        "  GO2W Autonomous Exploration\n"
+        "  - Frontier explorer starts after 15s\n"
+        "  - Stop:   ros2 topic pub /explore/resume std_msgs/Bool '{data: false}' --once\n"
+        "  - Resume: ros2 topic pub /explore/resume std_msgs/Bool '{data: true}' --once\n"
         "\n========================================\n"
     )
 
@@ -267,7 +277,8 @@ def generate_launch_description():
             scan_filter,
             slam_toolbox,
             nav2_nodes,
+            frontier_explorer,
             rviz_node,
-            teleop_info,
+            info,
         ]
     )

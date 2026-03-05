@@ -1,0 +1,23 @@
+# Laser scan filter chain for GO2W self-occlusion removal.
+# The lidar is at the front of the robot (x=0.289m from body center).
+# Looking backward, lidar rays hit the robot body (~0.1m) and rear
+# hips/legs (~0.5m). This box filter removes those self-hits.
+# Real walls behind the robot are occluded by the body anyway.
+
+scan_to_scan_filter_chain:
+  ros__parameters:
+    use_sim_time: true
+    filter1:
+      type: laser_filters/LaserScanBoxFilter
+      name: robot_body_filter
+      params:
+        # Box in the lidar frame (lidar faces +x forward)
+        # Removes all points behind the lidar within the robot footprint
+        box_frame: lidar
+        min_x: -0.55
+        max_x: 0.0
+        min_y: -0.22
+        max_y: 0.22
+        min_z: -1.0
+        max_z: 1.0
+        invert: false

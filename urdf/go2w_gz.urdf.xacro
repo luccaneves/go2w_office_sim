@@ -327,7 +327,7 @@
     <sensor name="gpu_lidar" type="gpu_lidar">
       <always_on>true</always_on>
       <update_rate>10</update_rate>
-      <topic>/scan</topic>
+      <topic>/scan_raw</topic>
       <gz_frame_id>lidar</gz_frame_id>
       <lidar>
         <scan>

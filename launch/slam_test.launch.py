@@ -31,6 +31,7 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_dir, "urdf", "go2w_gz.urdf.xacro")
     world_file = os.path.join(pkg_dir, "worlds", "office.sdf")
     slam_params_file = os.path.join(pkg_dir, "config", "slam_params.yaml")
+    laser_filter_file = os.path.join(pkg_dir, "config", "laser_filter.yaml")
     rviz_config_file = os.path.join(pkg_dir, "rviz", "nav2.rviz")
 
     declare_use_rviz = DeclareLaunchArgument("use_rviz", default_value="true")
@@ -88,9 +89,21 @@ def generate_launch_description():
             "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
-            "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            "/scan_raw@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
             "/imu/data@sensor_msgs/msg/Imu[gz.msgs.IMU",
             "/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
+        ],
+        output="screen",
+    )
+
+    # Laser scan filter (removes robot self-occlusion)
+    scan_filter = Node(
+        package="laser_filters",
+        executable="scan_to_scan_filter_chain",
+        parameters=[laser_filter_file],
+        remappings=[
+            ("scan", "/scan_raw"),
+            ("scan_filtered", "/scan"),
         ],
         output="screen",
     )
@@ -136,6 +149,7 @@ def generate_launch_description():
             robot_state_publisher,
             spawn_robot,
             bridge,
+            scan_filter,
             slam_toolbox,
             rviz_node,
             teleop_info,

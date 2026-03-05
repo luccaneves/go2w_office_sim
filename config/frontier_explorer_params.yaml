@@ -1,0 +1,23 @@
+# Frontier Explorer Parameters for GO2W
+# BFS frontier-based autonomous explorer with GVD clearance tiebreaking.
+# Adapted from auto_explore_sim for GO2W robot (base frame: "base").
+
+frontier_explorer:
+  ros__parameters:
+    planner_frequency: 0.5
+
+    # GO2W uses "base" frame (not "base_link")
+    robot_base_frame: base
+    global_frame: map
+
+    transform_tolerance: 2.0
+    min_frontier_size: 20
+    clearance_scale: 0.2
+    progress_timeout: 30.0
+    blacklist_timeout: 120.0
+    blacklist_radius: 0.5
+    return_to_init: false
+    visualize: true
+    gvd_min_clearance: 5
+    gvd_snap_radius: 2.0
+    visualize_gvd: true

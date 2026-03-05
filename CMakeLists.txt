@@ -13,4 +13,9 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+  scripts/frontier_explorer.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
