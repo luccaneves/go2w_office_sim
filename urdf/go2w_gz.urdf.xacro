@@ -323,24 +323,33 @@
     <parent link="body" />
     <child link="lidar" />
   </joint>
+  <!-- 3D LiDAR approximating Unitree L2 4D LiDAR specs:
+       Real L2: 360x96 FOV, 64k pts/s, 5.55Hz rotation, 0.05-30m range
+       Sim: 18 vertical channels, 640 horizontal samples, 10Hz for perf -->
   <gazebo reference="lidar">
     <sensor name="gpu_lidar" type="gpu_lidar">
       <always_on>true</always_on>
       <update_rate>10</update_rate>
-      <topic>/scan_raw</topic>
+      <topic>/pointcloud_raw</topic>
       <gz_frame_id>lidar</gz_frame_id>
       <lidar>
         <scan>
           <horizontal>
-            <samples>360</samples>
+            <samples>640</samples>
             <resolution>1</resolution>
             <min_angle>-3.14159</min_angle>
             <max_angle>3.14159</max_angle>
           </horizontal>
+          <vertical>
+            <samples>18</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.2618</min_angle>   <!-- -15 deg (below horizontal) -->
+            <max_angle>1.4137</max_angle>    <!-- +81 deg (upward, ~96 total) -->
+          </vertical>
         </scan>
         <range>
-          <min>0.3</min>
-          <max>20.0</max>
+          <min>0.05</min>
+          <max>30.0</max>
           <resolution>0.01</resolution>
         </range>
         <noise>

@@ -81,8 +81,8 @@ Visualization Manager:
 
     - Class: rviz_default_plugins/Map
       Name: Local Costmap
-      Enabled: false
-      Value: false
+      Enabled: true
+      Value: true
       Topic:
         Value: /local_costmap/costmap
       Alpha: 0.5

@@ -132,9 +132,98 @@ Concrete code evidence (most relevant deltas):
   - clean scans
   - explicit, verifiable data contracts
 
-## 7. Next Week
+## 7. Nav2 Controller Tuning (2026-03-06)
+
+### 7.1 Problem: Robot Collisions & Poor Turning
+
+The initial Nav2 config had aggressive speed limits (`vx_max: 1.0`), weak obstacle avoidance (`CostCritic: 5.0`, thin inflation), and MPPI critic weights that fought each other during turns. The robot collided with obstacles and couldn't rotate when the path was perpendicular to its heading.
+
+### 7.2 Root Cause: MPPI Critic Deadlock on DiffDrive
+
+When the planned path is perpendicular (90°) to the robot's heading, MPPI enters a deadlock:
+
+- `PathAlignCritic` (high weight) wants the robot to move sideways onto the path — impossible for DiffDrive
+- `PathAngleCritic` (low weight) wants rotation — but is outweighed
+- All sampled trajectories score poorly → near-zero velocity output → robot stops
+
+### 7.3 Solution: RotationShimController + Balanced Critics
+
+**RotationShimController** wraps MPPI to handle large heading errors:
+
+```yaml
+FollowPath:
+  plugin: "nav2_rotation_shim_controller::RotationShimController"
+  primary_controller: "nav2_mppi_controller::MPPIController"
+  angular_dist_threshold: 0.20   # rotate in-place until within ~11° of path
+  rotate_to_heading_angular_vel: 1.8  # rad/s
+  max_angular_accel: 3.2
+```
+
+When heading error > 11°, the shim rotates the robot in-place before handing off to MPPI. This breaks the deadlock cleanly.
+
+**Note:** `FeasiblePathHandler` (with `enforce_path_rotation`) is a newer Nav2 alternative but is unavailable on Humble. The RotationShimController works on Humble/Iron/Jazzy.
+
+### 7.4 MPPI Tuning Summary (Official Nav2 Defaults as Reference)
+
+Key changes from initial config → tuned config (referencing `nav2_params_official.yaml`):
+
+| Parameter | Initial | Tuned | Rationale |
+|-----------|---------|-------|-----------|
+| `vx_max` / `vx_min` | 1.0 / -1.0 | **0.5 / -0.5** | Safer office speed; less collision risk |
+| `wz_max` | 2.5 | **1.9** | Matches official default |
+| `wz_std` | 1.2 | **0.8** | Less wobble; 0.4 (official) was too low for our setup |
+| `iteration_count` | 2 | **1** | Sufficient with `regenerate_noises: true` |
+| `regenerate_noises` | false | **true** | Better trajectory diversity per cycle |
+| `PathAlignCritic.cost_weight` | 22.0 | **14.0** | Was dominating; caused deadlock with DiffDrive |
+| `PathAlignCritic.max_path_occupancy_ratio` | 0.40 | **0.05** | Disables critic near obstacles (lets robot deviate to avoid) |
+| `PathFollowCritic.cost_weight` | 12.0 | **5.0** | Less corner overshooting |
+| `PathFollowCritic.offset_from_furthest` | 20 | **5** | Shorter lookahead carrot |
+| `PathAngleCritic.threshold_to_consider` | 1.0 | **0.5** | Active closer to goal |
+| `PreferForwardCritic` | disabled | **enabled (weight 5)** | Prevent unnecessary reversing |
+| Local `inflation_radius` | 0.45 | **0.70** | Match official; better clearance |
+| Global `inflation_radius` | 0.25 | **0.70** | Was barely robot radius; planner couldn't find safe paths |
+| `cost_scaling_factor` (both) | 4-5 | **3.0** | Gentler falloff; wider safe zone |
+| Velocity smoother `min_velocity[0]` | -0.10 | **-0.5** | Was bottlenecking reverse despite `vx_min: -0.5` |
+| Velocity smoother `max_accel` | [1.5, 0, 2.5] | **[2.5, 0, 3.2]** | Match MPPI accel limits; prevent trajectory mismatch |
+| Collision monitor `time_before_collision` | 0.5 | **1.2** | At 0.5 m/s, 0.5s = only 0.25m braking; 1.2s = 0.6m |
+
+### 7.5 Costmap Inflation Tuning Guide
+
+Inflation creates a "danger gradient" around obstacles. Two parameters control it:
+
+- `inflation_radius`: how far the gradient extends (meters)
+- `cost_scaling_factor`: how steeply cost drops with distance (higher = drops faster)
+
+```
+Wall   |████|▓▓▓|▒▒▒|░░░|   |       inflation_radius = 0.70
+       lethal  inscribed  free
+                ←── cost_scaling_factor controls decay rate ──→
+```
+
+- **Thin inflation (0.25m, factor 5)**: Planner/controller see very narrow buffers → paths hug walls → collisions
+- **Thick inflation (0.70m, factor 3)**: Wider buffers → paths stay centered in corridors → safer but may fail in very tight spaces
+
+### 7.6 TF Timing Issue: Local Costmap `global_frame`
+
+The `odom→base` TF from Gazebo's `OdometryPublisher` via `ros_gz_bridge` has a massive timestamp delay (~1.77e9 seconds). This causes the local costmap's obstacle layer to silently drop all scan data when using `global_frame: odom`.
+
+**Fix:** Set `local_costmap.global_frame: map` (not `odom`). This uses SLAM's correctly-timestamped `map→odom` TF path. Both local and global costmaps now use the `map` frame.
+
+**Startup timing:** Since `map` frame doesn't exist until SLAM publishes its first TF, Nav2 nodes are wrapped in `TimerAction(period=10.0)` in the launch files to avoid "Invalid frame ID 'map'" errors.
+
+### 7.7 Key Takeaways
+
+1. **RotationShimController is essential for DiffDrive + MPPI** — without it, MPPI deadlocks when the path is perpendicular to the robot heading.
+2. **Critic weight balance matters more than absolute values** — `PathAlignCritic >> CostCritic` means the robot hugs the path into obstacles. Keep obstacle avoidance critics competitive.
+3. **Velocity smoother must match MPPI limits** — mismatched accel/velocity limits create trajectories the smoother can't execute, causing jerky or stalled motion.
+4. **Inflation radius is the #1 safety knob** — thin inflation (< robot radius) guarantees collisions. Start with 2-3x robot radius.
+5. **See `docs/mppi_tuning_handbook.md`** for the full parameter reference and common scenario fixes.
+
+## 8. Next Steps
 
 - Back-port the two hard requirements into any future integration branch:
   - physics-ground-truth odom (or a properly modeled skid-steer odom source)
   - scan self-occlusion filtering (box filter or equivalent)
 - Align legacy launch files so all bringups use the same `/scan_raw -> /scan` contract.
+- Test navigation in tighter environments and tune `CostCritic.consider_footprint: true` if collisions persist.
+- Evaluate `SmacPlannerHybrid` (Hybrid A*) as an alternative to `SmacPlanner2D` for heading-aware path planning.

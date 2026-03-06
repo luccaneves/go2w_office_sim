@@ -107,7 +107,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    # ===== 4. ROS-GZ Bridge =====
+    # ===== 4. ROS-GZ Bridge (3D pointcloud from Gazebo) =====
     bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
@@ -116,14 +116,42 @@ def generate_launch_description():
             "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
-            "/scan_raw@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            "/pointcloud_raw@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",
             "/imu/data@sensor_msgs/msg/Imu[gz.msgs.IMU",
             "/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
         ],
         output="screen",
     )
 
-    # ===== 4b. Laser scan filter (removes robot self-occlusion) =====
+    # ===== 4b. 3D pointcloud -> 2D laser scan =====
+    pointcloud_to_scan = Node(
+        package="pointcloud_to_laserscan",
+        executable="pointcloud_to_laserscan_node",
+        name="pointcloud_to_laserscan",
+        parameters=[
+            {
+                "use_sim_time": True,
+                "target_frame": "lidar",
+                "min_height": -0.1,
+                "max_height": 0.3,
+                "angle_min": -3.14159,
+                "angle_max": 3.14159,
+                "angle_increment": 0.00872665,
+                "scan_time": 0.1,
+                "range_min": 0.05,
+                "range_max": 30.0,
+                "inf_epsilon": 1.0,
+                "use_inf": True,
+            }
+        ],
+        remappings=[
+            ("cloud_in", "/pointcloud_raw"),
+            ("scan", "/scan_raw"),
+        ],
+        output="screen",
+    )
+
+    # ===== 4c. Laser scan filter (removes robot self-occlusion) =====
     scan_filter = Node(
         package="laser_filters",
         executable="scan_to_scan_filter_chain",
@@ -274,9 +302,10 @@ def generate_launch_description():
             robot_state_publisher,
             spawn_robot,
             bridge,
+            pointcloud_to_scan,
             scan_filter,
             slam_toolbox,
-            nav2_nodes,
+            TimerAction(period=10.0, actions=[nav2_nodes]),
             frontier_explorer,
             rviz_node,
             info,

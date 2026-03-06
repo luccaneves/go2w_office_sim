@@ -64,7 +64,7 @@ def generate_launch_description():
     )
 
     # Bridge: cmd_vel (ROS->GZ), odom (GZ->ROS), clock (GZ->ROS),
-    #         joint_states (GZ->ROS), scan (GZ->ROS), imu (GZ->ROS)
+    #         joint_states (GZ->ROS), pointcloud (GZ->ROS), imu (GZ->ROS)
     bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
@@ -73,9 +73,37 @@ def generate_launch_description():
             "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
-            "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            "/pointcloud_raw@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",
             "/imu/data@sensor_msgs/msg/Imu[gz.msgs.IMU",
             "/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
+        ],
+        output="screen",
+    )
+
+    # Convert 3D pointcloud to 2D laser scan (simulates L2 4D LiDAR -> 2D)
+    pointcloud_to_scan = Node(
+        package="pointcloud_to_laserscan",
+        executable="pointcloud_to_laserscan_node",
+        name="pointcloud_to_laserscan",
+        parameters=[
+            {
+                "use_sim_time": True,
+                "target_frame": "lidar",
+                "min_height": -0.1,
+                "max_height": 0.3,
+                "angle_min": -3.14159,
+                "angle_max": 3.14159,
+                "angle_increment": 0.00872665,  # ~720 points
+                "scan_time": 0.1,
+                "range_min": 0.05,
+                "range_max": 30.0,
+                "inf_epsilon": 1.0,
+                "use_inf": True,
+            }
+        ],
+        remappings=[
+            ("cloud_in", "/pointcloud_raw"),
+            ("scan", "/scan"),
         ],
         output="screen",
     )
@@ -95,6 +123,7 @@ def generate_launch_description():
             robot_state_publisher,
             spawn_robot,
             bridge,
+            pointcloud_to_scan,
             teleop_info,
         ]
     )
