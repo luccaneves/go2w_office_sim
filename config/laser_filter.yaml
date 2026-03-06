@@ -14,7 +14,7 @@ scan_to_scan_filter_chain:
         # Box in the lidar frame (lidar faces +x forward)
         # Removes all points behind the lidar within the robot footprint
         box_frame: lidar
-        min_x: -0.55
+        min_x: -0.6
         max_x: 0.0
         min_y: -0.22
         max_y: 0.22
