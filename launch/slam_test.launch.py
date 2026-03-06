@@ -89,7 +89,7 @@ def generate_launch_description():
             "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
-            "/pointcloud_raw@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",
+            "/pointcloud_raw/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",
             "/imu/data@sensor_msgs/msg/Imu[gz.msgs.IMU",
             "/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
         ],
@@ -118,7 +118,7 @@ def generate_launch_description():
             }
         ],
         remappings=[
-            ("cloud_in", "/pointcloud_raw"),
+            ("cloud_in", "/pointcloud_raw/points"),
             ("scan", "/scan_raw"),
         ],
         output="screen",
