@@ -4,7 +4,7 @@
 
 frontier_explorer:
   ros__parameters:
-    planner_frequency: 0.5
+    planner_frequency: 0.2
 
     # GO2W uses "base" frame (not "base_link")
     robot_base_frame: base
@@ -19,5 +19,11 @@ frontier_explorer:
     return_to_init: false
     visualize: true
     gvd_min_clearance: 5
-    gvd_snap_radius: 2.0
+    gvd_snap_radius: 1.0
     visualize_gvd: true
+    gvd_marker_publish_every: 3
+    gvd_marker_stride: 2
+    profile_timing: true
+    profile_log_interval: 10.0
+    profile_callbacks: true
+    profile_callback_log_interval: 10.0

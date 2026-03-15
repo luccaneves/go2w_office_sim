@@ -18,7 +18,7 @@ from launch.actions import (
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, FindExecutable, LaunchConfiguration
+from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PythonExpression
 
 from launch_ros.actions import Node, SetParameter
 from launch_ros.descriptions import ParameterFile
@@ -32,6 +32,7 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_rviz = LaunchConfiguration("use_rviz")
+    explorer_impl = LaunchConfiguration("explorer_impl")
 
     # File paths
     xacro_file = os.path.join(pkg_dir, "urdf", "go2w_gz.urdf.xacro")
@@ -61,6 +62,9 @@ def generate_launch_description():
     )
     declare_use_rviz = DeclareLaunchArgument(
         "use_rviz", default_value="true"
+    )
+    declare_explorer_impl = DeclareLaunchArgument(
+        "explorer_impl", default_value="python"
     )
 
     stdout_linebuf = SetEnvironmentVariable(
@@ -259,7 +263,7 @@ def generate_launch_description():
     )
 
     # ===== 7. Frontier Explorer (delayed 15s for Nav2 + SLAM to start) =====
-    frontier_explorer = TimerAction(
+    frontier_explorer_python = TimerAction(
         period=15.0,
         actions=[
             Node(
@@ -268,6 +272,19 @@ def generate_launch_description():
                 name="frontier_explorer",
                 output="screen",
                 parameters=[explore_params_file, {"use_sim_time": use_sim_time}],
+                condition=IfCondition(
+                    PythonExpression(["'", explorer_impl, "' == 'python'"])
+                ),
+            ),
+            Node(
+                package="go2w_office_sim",
+                executable="frontier_explorer",
+                name="frontier_explorer",
+                output="screen",
+                parameters=[explore_params_file, {"use_sim_time": use_sim_time}],
+                condition=IfCondition(
+                    PythonExpression(["'", explorer_impl, "' == 'cpp'"])
+                ),
             ),
         ],
     )
@@ -298,6 +315,7 @@ def generate_launch_description():
             stdout_linebuf,
             declare_use_sim_time,
             declare_use_rviz,
+            declare_explorer_impl,
             gz_sim,
             robot_state_publisher,
             spawn_robot,
@@ -306,7 +324,7 @@ def generate_launch_description():
             scan_filter,
             slam_toolbox,
             TimerAction(period=10.0, actions=[nav2_nodes]),
-            frontier_explorer,
+            frontier_explorer_python,
             rviz_node,
             info,
         ]
