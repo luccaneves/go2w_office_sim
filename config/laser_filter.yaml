@@ -4,20 +4,15 @@
 # hips/legs (~0.5m). This box filter removes those self-hits.
 # Real walls behind the robot are occluded by the body anyway.
 
-scan_to_scan_filter_chain:
+scan_filter_chain:
   ros__parameters:
-    use_sim_time: true
     filter1:
-      type: laser_filters/LaserScanBoxFilter
-      name: robot_body_filter
+      name: self_filter
+      type: laser_filters/LaserScanAngularBoundsFilter
       params:
-        # Box in the lidar frame (lidar faces +x forward)
-        # Removes all points behind the lidar within the robot footprint
-        box_frame: lidar
-        min_x: -0.6
-        max_x: 0.0
-        min_y: -0.22
-        max_y: 0.22
-        min_z: -1.0
-        max_z: 1.0
-        invert: false
+        lower_angle: -0.7
+        upper_angle: 0.7
+
+
+
+        

@@ -310,57 +310,59 @@
     </sensor>
   </gazebo>
 
-  <!-- LiDAR link -->
   <link name="lidar">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
-    </inertial>
-  </link>
-  <joint name="lidar_joint" type="fixed">
-    <origin xyz="0.28945 0 -0.046825" rpy="0 0 0" />
-    <parent link="body" />
-    <child link="lidar" />
-  </joint>
-  <!-- 3D LiDAR approximating Unitree L2 4D LiDAR specs:
-       Real L2: 360x96 FOV, 64k pts/s, 5.55Hz rotation, 0.05-30m range
-       Sim: 18 vertical channels, 640 horizontal samples, 10Hz for perf -->
-  <gazebo reference="lidar">
-    <sensor name="gpu_lidar" type="gpu_lidar">
-      <always_on>true</always_on>
-      <update_rate>10</update_rate>
-      <topic>/pointcloud_raw</topic>
-      <gz_frame_id>lidar</gz_frame_id>
-      <lidar>
-        <scan>
-          <horizontal>
-            <samples>640</samples>
-            <resolution>1</resolution>
-            <min_angle>-3.14159</min_angle>
-            <max_angle>3.14159</max_angle>
-          </horizontal>
-          <vertical>
-            <samples>18</samples>
-            <resolution>1</resolution>
-            <min_angle>-0.2618</min_angle>   <!-- -15 deg (below horizontal) -->
-            <max_angle>1.4137</max_angle>    <!-- +81 deg (upward, ~96 total) -->
-          </vertical>
-        </scan>
-        <range>
-          <min>0.05</min>
-          <max>30.0</max>
-          <resolution>0.01</resolution>
-        </range>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.01</stddev>
-        </noise>
-      </lidar>
-      <visualize>false</visualize>
-    </sensor>
-  </gazebo>
+  <inertial>
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <mass value="0.001" />
+    <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+  </inertial>
+</link>
+
+<joint name="lidar_joint" type="fixed">
+  <origin xyz="0.28945 0 0.25" rpy="0 0 0" />
+  <parent link="body" />
+  <child link="lidar" />
+</joint>
+
+<gazebo reference="lidar">
+  <sensor name="gpu_lidar" type="gpu_lidar">
+    <always_on>true</always_on>
+    <update_rate>10</update_rate>
+    <topic>/pointcloud_raw</topic>
+    <gz_frame_id>lidar</gz_frame_id>
+
+    <lidar>
+      <scan>
+        <horizontal>
+          <samples>640</samples>
+          <resolution>1</resolution>
+          <min_angle>-3.14159</min_angle>
+          <max_angle>3.14159</max_angle>
+        </horizontal>
+        <vertical>
+          <samples>1</samples>
+          <resolution>1</resolution>
+          <min_angle>0.0</min_angle>
+          <max_angle>0.0</max_angle>
+        </vertical>
+      </scan>
+
+      <range>
+        <min>0.05</min>
+        <max>30.0</max>
+        <resolution>0.01</resolution>
+      </range>
+
+      <noise>
+        <type>gaussian</type>
+        <mean>0.0</mean>
+        <stddev>0.01</stddev>
+      </noise>
+    </lidar>
+
+    <visualize>true</visualize>
+  </sensor>
+</gazebo>
 
   <!-- Camera link -->
   <link name="camera">
