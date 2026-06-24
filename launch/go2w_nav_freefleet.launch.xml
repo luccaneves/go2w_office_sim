@@ -1,0 +1,43 @@
+<?xml version='1.0' ?>
+
+<launch>
+  <arg name="use_sim_time" default="false"/>
+  <arg name="failover_mode" default="false"/>
+  <arg name="gazebo_version" default='8'/>
+  <arg name="use_rviz" default='true'/>
+  <arg name="spawn_x" default='-4.0'/>
+  <arg name="spawn_y" default='-6.0'/>
+  <arg name="spawn_z" default='0.45'/>
+  <arg name="spawn_yaw" default='0.0'/>
+  <arg name="namespace" default='robot1'/>
+
+
+
+  <include file="$(find-pkg-share go2w_rmf_office_nav)/launch/bringup_go2w_nav.launch.py">
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
+    <arg name="use_rviz" value="$(var use_rviz)"/>
+    <arg name="spawn_x" value="$(var spawn_x)"/>
+    <arg name="spawn_y" value="$(var spawn_y)"/>
+    <arg name="spawn_z" value="$(var spawn_z)"/>
+    <arg name="spawn_yaw" value="$(var spawn_yaw)"/>
+  </include>
+
+
+  <!-- <include file="$(find-pkg-share free_fleet_adapter)/fleet_adapter.launch.xml">
+    <arg name="use_sim_time" value="false"/>
+    <arg name="nav_graph_file" value="$(find-pkg-share free_fleet_examples)/maps/go2w_world/nav_graphs/0.yaml" />
+    <arg name="config_file" value="$(find-pkg-share free_fleet_examples)/config/fleet/nav2_go2w_simulation_fleet_config.yaml"/>
+    <arg name="server_uri" value="$(var server_uri)"/>
+  </include> -->
+
+  <!-- Add GO2W spawn + bridges + SLAM + Nav2 on top of the original launch -->
+   <!--<include file="$(find-pkg-share go2w_office_sim)/launch/nav2_office.launch.py">
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
+    <arg name="use_rviz" value="$(var use_rviz)"/>
+    <arg name="spawn_x" value="$(var spawn_x)"/>
+    <arg name="spawn_y" value="$(var spawn_y)"/>
+    <arg name="spawn_z" value="$(var spawn_z)"/>
+    <arg name="spawn_yaw" value="$(var spawn_yaw)"/>
+  </include> -->
+
+</launch>
